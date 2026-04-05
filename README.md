@@ -20,8 +20,43 @@ Three-service architecture for visualising Meshtastic range-test data.
 │  measurements        │  │  (subprocess) → scipy cells  │
 └──────────────────────┘  └─────────────────────────────┘
 ```
-
 ## Quick start
+Use the images built by the CI pipeline from GitHub Container Registry.
+```bash
+docker compose up -d
+```
+### Example `docker-compose.yml`
+
+```yml 
+services:
+  frontend:
+    image: ghcr.io/sirsirom/rangetest/frontend:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - DATA_SERVICE_URL=http://data-service:5001
+      - HEATMAP_SERVICE_URL=http://heatmap-service:5002
+    depends_on:
+      - data-service
+      - heatmap-service
+
+  data-service:
+    image: ghcr.io/sirsirom/rangetest/data-service:latest
+    environment:
+      - DB_PATH=/data/rangetest.db
+    volumes:
+      - data:/data
+
+  heatmap-service:
+    image: ghcr.io/sirsirom/rangetest/heatmap-service:latest
+    environment:
+      - DATA_SERVICE_URL=http://data-service:5001
+
+volumes:
+  data:
+```
+
+## Quick start for local development
 
 ```bash
 docker compose up --build
