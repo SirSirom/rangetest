@@ -1,0 +1,52 @@
+services:
+
+  data-service:
+    build: ./data-service
+    container_name: meshtastic-data
+    restart: unless-stopped
+    volumes:
+      - data-db:/app/data
+    ports:
+      - "5001:5001"
+    environment:
+      - DB_PATH=/app/data/rangetest.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  heatmap-service:
+    build: ./heatmap-service
+    container_name: meshtastic-heatmap
+    restart: unless-stopped
+    ports:
+      - "5002:5002"
+    environment:
+      - DATA_SERVICE_URL=http://data-service:5001
+    depends_on:
+      data-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: meshtastic-frontend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - DATA_SERVICE_URL=http://data-service:5001
+      - HEATMAP_SERVICE_URL=http://heatmap-service:5002
+    depends_on:
+      data-service:
+        condition: service_healthy
+      heatmap-service:
+        condition: service_healthy
+
+volumes:
+  data-db:

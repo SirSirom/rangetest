@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Meshtastic Coverage Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+<!-- ── Sidebar ─────────────────────────────────────────────────── -->
+<aside id="sidebar">
+  <div id="sidebar-header">
+    <span class="sidebar-title">📋 Measurements</span>
+    <div class="header-right">
+      <input id="search-box" type="search" placeholder="Filter…" autocomplete="off">
+      <button id="sidebar-toggle" title="Collapse">‹</button>
+    </div>
+  </div>
+
+  <div id="sidebar-body">
+
+    <!-- Selection toolbar — shown only when rows are selected -->
+    <div id="selection-bar" class="hidden">
+      <span id="selection-count">0 selected</span>
+      <div class="selection-actions">
+        <button id="sel-hide-btn">Hide</button>
+        <button id="sel-show-btn">Show</button>
+        <button id="sel-delete-btn" class="danger">Delete</button>
+        <button id="sel-clear-btn" title="Clear selection">✕</button>
+      </div>
+    </div>
+
+    <!-- noMsg lives here, outside the list, so innerHTML='' never kills it -->
+    <p class="muted hidden" id="no-data-msg">No data loaded yet.</p>
+
+    <div id="measurement-list"></div>
+
+    <div id="sidebar-actions">
+      <label class="upload-btn">
+        ＋ Import CSV
+        <input type="file" id="csv-input" accept=".csv" hidden>
+      </label>
+      <button id="clear-btn" class="danger-btn">Clear all</button>
+    </div>
+    <div id="import-status"></div>
+  </div>
+</aside>
+
+<!-- ── Map ─────────────────────────────────────────────────────── -->
+<div id="map"></div>
+
+<!-- ── Settings ────────────────────────────────────────────────── -->
+<button id="settings-toggle" title="Settings">⚙</button>
+
+<div id="settings-panel" class="hidden">
+  <div class="settings-header">
+    <span>Settings</span>
+    <button id="settings-close">✕</button>
+  </div>
+
+  <section class="settings-section">
+    <h3>Map type</h3>
+    <div class="btn-group" id="map-type-btns">
+      <button class="map-type-btn active" data-type="osm">🗺 Street</button>
+      <button class="map-type-btn" data-type="satellite">🛰 Satellite</button>
+      <button class="map-type-btn" data-type="topo">⛰ Topo</button>
+      <button class="map-type-btn" data-type="white">⬜ Blank</button>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <h3>Layers</h3>
+    <label class="toggle-row">
+      <input type="checkbox" id="show-markers" checked> Show measurement markers
+    </label>
+    <label class="toggle-row">
+      <input type="checkbox" id="show-links"> Show range lines
+    </label>
+  </section>
+
+  <section class="settings-section">
+    <h3>Heatmap</h3>
+    <label>
+      View mode
+      <div class="btn-group" style="margin-top:4px">
+        <button class="mode-btn active" data-mode="heatmap">Heatmap</button>
+        <button class="mode-btn" data-mode="triangles">Triangles</button>
+        <button class="mode-btn" data-mode="both">Both</button>
+        <button class="mode-btn" data-mode="none">Off</button>
+      </div>
+    </label>
+    <label>
+      Grid resolution <span class="setting-val" id="res-val">80</span>
+      <input type="range" id="resolution" min="20" max="160" step="10" value="80">
+    </label>
+    <label>
+      Opacity <span class="setting-val" id="opacity-val">0.65</span>
+      <input type="range" id="opacity" min="0.1" max="1" step="0.05" value="0.65">
+    </label>
+  </section>
+
+  <section class="settings-section">
+    <h3>Color scale</h3>
+    <div class="btn-group" id="color-presets">
+      <button class="preset-btn active" data-preset="rdylbu">🌡 RdYlBu</button>
+      <button class="preset-btn" data-preset="viridis">🟣 Viridis</button>
+      <button class="preset-btn" data-preset="plasma">🔥 Plasma</button>
+      <button class="preset-btn" data-preset="greens">🌿 Greens</button>
+    </div>
+    <label class="toggle-row" style="margin-top:8px">
+      <input type="checkbox" id="invert-colors"> Invert scale
+    </label>
+  </section>
+
+  <section class="settings-section">
+    <h3>SNR legend</h3>
+    <div id="legend-bar"></div>
+    <div id="legend-labels">
+      <span id="leg-min">—</span>
+      <span>0 dB</span>
+      <span id="leg-max">—</span>
+    </div>
+  </section>
+</div>
+
+<!-- Heatmap loading indicator -->
+<div id="heatmap-spinner" class="hidden">⟳ Computing…</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
