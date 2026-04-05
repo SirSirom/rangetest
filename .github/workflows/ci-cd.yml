@@ -14,6 +14,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Set lowercase image name
+      run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -36,7 +39,6 @@ jobs:
 
     - name: Run tests
       run: |
-        # Placeholder for tests - add actual test commands here
         echo "Running tests..."
         # pytest data-service/
         # pytest frontend/
@@ -57,7 +59,8 @@ jobs:
       with:
         context: ./data-service
         push: true
-        tags: ghcr.io/${{ github.repository }}/data-service:latest
+        tags: |
+          ${{ env.IMAGE_NAME }}/data-service:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -66,7 +69,8 @@ jobs:
       with:
         context: ./frontend
         push: true
-        tags: ghcr.io/${{ github.repository }}/frontend:latest
+        tags: |
+          ${{ env.IMAGE_NAME }}/frontend:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
@@ -75,10 +79,11 @@ jobs:
       with:
         context: ./heatmap-service
         push: true
-        tags: ghcr.io/${{ github.repository }}/heatmap-service:latest
+        tags: |
+          ${{ env.IMAGE_NAME }}/heatmap-service:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Test docker-compose build
+    - name: Test docker compose build
       run: |
-        docker-compose build
+        docker compose build
