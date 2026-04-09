@@ -68,7 +68,7 @@
       <button class="map-type-btn active" data-type="osm">🗺 Street</button>
       <button class="map-type-btn" data-type="satellite">🛰 Satellite</button>
       <button class="map-type-btn" data-type="topo">⛰ Topo</button>
-      <button class="map-type-btn" data-type="white">⬜ Blank</button>
+      <button class="map-type-btn" data-type="white">▪ Blank</button>
     </div>
   </section>
 
@@ -77,29 +77,15 @@
     <label class="toggle-row">
       <input type="checkbox" id="show-markers" checked> Show measurement markers
     </label>
-    <label class="toggle-row">
-      <input type="checkbox" id="show-links"> Show range lines
-    </label>
+
   </section>
 
   <section class="settings-section">
     <h3>Heatmap</h3>
-    <label>
-      View mode
-      <div class="btn-group" style="margin-top:4px">
-        <button class="mode-btn active" data-mode="heatmap">Heatmap</button>
-        <button class="mode-btn" data-mode="triangles">Triangles</button>
-        <button class="mode-btn" data-mode="both">Both</button>
-        <button class="mode-btn" data-mode="none">Off</button>
-      </div>
-    </label>
-    <label>
-      Grid resolution <span class="setting-val" id="res-val">80</span>
-      <input type="range" id="resolution" min="20" max="160" step="10" value="80">
-    </label>
+
     <label>
       Opacity <span class="setting-val" id="opacity-val">0.65</span>
-      <input type="range" id="opacity" min="0.1" max="1" step="0.05" value="0.65">
+      <input type="range" id="opacity" min="0" max="1" step="0.01" value="0.65">
     </label>
   </section>
 
@@ -125,11 +111,42 @@
       <span id="leg-max">—</span>
     </div>
   </section>
+
+  <!-- ── Tile export (NEW) ──────────────────────────────────────── -->
+  <section class="settings-section">
+    <h3>External tile layer</h3>
+    <p style="font-size:0.75rem;color:var(--muted);margin-bottom:6px">
+      Add this URL as an online tile source in OsmAnd, QGIS, or MapLibre.<br>
+      <em style="color:var(--text)">OsmAnd:</em> Configure map → Overlay → Add online source<br>
+      Replace <code style="font-size:0.7rem;background:var(--surface2);padding:1px 3px;border-radius:3px">{z}/{x}/{y}</code>
+      with <code style="font-size:0.7rem;background:var(--surface2);padding:1px 3px;border-radius:3px">{0}/{1}/{2}</code>
+      in OsmAnd's URL field.
+    </p>
+    <div id="tile-export-url"
+         style="font-size:0.72rem;word-break:break-all;color:var(--accent);
+                background:var(--surface2);border:1px solid var(--border);
+                border-radius:5px;padding:6px 8px;margin-bottom:6px;user-select:all">
+      loading…
+    </div>
+    <div class="btn-group">
+      <button id="btn-copy-tile-url"   style="font-size:0.75rem">📋 Copy tile URL</button>
+      <button id="btn-copy-tilejson"   style="font-size:0.75rem">📋 Copy TileJSON URL</button>
+    </div>
+  </section>
+
 </div>
 
 <!-- Heatmap loading indicator -->
 <div id="heatmap-spinner" class="hidden">⟳ Computing…</div>
 
+<script>
+  // Injected by Flask — the public URL the browser uses to reach heatmap-service.
+  // Falls back to same hostname as frontend on port 5002 if not set.
+  window.HEATMAP_URL = {{ heatmap_public_url | tojson }};
+  if (!window.HEATMAP_URL) {
+    window.HEATMAP_URL = window.location.protocol + '//' + window.location.hostname + ':5002';
+  }
+</script>
 <script src="/static/app.js"></script>
 </body>
 </html>
