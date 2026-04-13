@@ -200,6 +200,24 @@ input[type=range] { accent-color: var(--accent); width: 100%; cursor: pointer; }
 #heatmap-spinner.hidden { display: none; }
 @keyframes spin-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
+/* ── Drag-and-drop overlay ───────────────────────────────────────────────── */
+#drop-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0, 188, 212, 0.12);
+  border: 3px dashed var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+#drop-overlay.hidden { display: none; }
+#drop-overlay-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  background: var(--surface); border: 1px solid var(--accent);
+  border-radius: 16px; padding: 36px 52px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+#drop-overlay-icon { font-size: 2.8rem; color: var(--accent); }
+#drop-overlay-label { font-size: 1.1rem; font-weight: 600; color: var(--accent); }
+
 /* ── Leaflet popup ───────────────────────────────────────────────────────── */
 .leaflet-popup-content-wrapper {
   background: var(--surface); color: var(--text);

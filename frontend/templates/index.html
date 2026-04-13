@@ -139,6 +139,14 @@
 <!-- Heatmap loading indicator -->
 <div id="heatmap-spinner" class="hidden">⟳ Computing…</div>
 
+<!-- Drag-and-drop overlay -->
+<div id="drop-overlay" class="hidden">
+  <div id="drop-overlay-inner">
+    <div id="drop-overlay-icon">⬇</div>
+    <div id="drop-overlay-label">Drop CSV to import</div>
+  </div>
+</div>
+
 <script>
   // Injected by Flask — the public URL the browser uses to reach heatmap-service.
   // Falls back to same hostname as frontend on port 5002 if not set.
