@@ -17,7 +17,7 @@ Three-service architecture for visualising Meshtastic range-test data as an inte
 │ Serves UI,     │    │ XYZ PNG tiles (EPSG:3857)           │
 │ proxies data   │    │ TileJSON metadata                   │
 │ API calls      │    │ Uses data-service for measurements  │
-│               │    │ Direct browser access — no proxy    │
+│                │    │ Direct browser access — no proxy    │
 └───────┬────────┘    └─────────────────────────────────────┘
         ▼
 ┌────────────────────┐
