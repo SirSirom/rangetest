@@ -2,7 +2,7 @@
 heatmap-service — FastAPI microservice  (port 5002)
 
 Serves the SNR heatmap as Web Mercator XYZ PNG tiles (EPSG:3857).
-Color scale and opacity are passed as query parameters so
+Color scale and invert are passed as query parameters so
 the frontend never needs to re-request data just to change appearance.
 
 Endpoints
@@ -10,7 +10,6 @@ Endpoints
   GET  /tiles/{z}/{x}/{y}.png   XYZ tiles
                                   ?colorscale=rdylbu|viridis|plasma|greens
                                   &invert=0|1
-                                  &opacity=0.0–1.0
   GET  /tiles/metadata.json     TileJSON 2.2 descriptor
   POST /invalidate              drop data + tile cache
   GET  /health
@@ -53,17 +52,15 @@ COLOR_SCALES: dict[str, list[tuple[int, int, int]]] = {
     "plasma":  [(13,8,135),(126,3,167),(204,71,120),(248,149,64),(240,249,33)],
     "greens":  [(247,252,245),(199,233,192),(116,196,118),(35,139,69),(0,68,27)],
 }
-DEFAULT_SCALE   = "rdylbu"
-DEFAULT_OPACITY = 0.65
+DEFAULT_SCALE = "rdylbu"
 
 
-def _colormap(norm: np.ndarray, scale: str, invert: bool, opacity: float) -> np.ndarray:
+def _colormap(norm: np.ndarray, scale: str, invert: bool) -> np.ndarray:
     """Map normalised [0,1] array → RGBA uint8 (H×W×4)."""
     stops = COLOR_SCALES.get(scale, COLOR_SCALES[DEFAULT_SCALE])
     n     = len(stops) - 1
     h, w  = norm.shape
     out   = np.zeros((h, w, 4), dtype=np.uint8)
-    alpha = int(round(opacity * 255))
 
     t = norm.copy()
     if invert:
@@ -79,7 +76,7 @@ def _colormap(norm: np.ndarray, scale: str, invert: bool, opacity: float) -> np.
     rgb    = np.clip(lo_rgb + frac * (hi_rgb - lo_rgb), 0, 255).astype(np.uint8)
 
     out[:, :, :3] = rgb
-    out[:, :,  3] = alpha
+    out[:, :,  3] = 255
     return out
 
 
@@ -231,7 +228,7 @@ def _empty_png() -> bytes:
 
 
 def _render(z: int, tx: int, ty: int, dc: _DataCache,
-            scale: str, invert: bool, opacity: float) -> bytes:
+            scale: str, invert: bool) -> bytes:
 
     if len(dc.points) < 3 or dc.hull_path is None:
         return _empty_png()
@@ -302,7 +299,7 @@ def _render(z: int, tx: int, ty: int, dc: _DataCache,
         else np.where(nan_mask, np.nan, 0.5)
     )
 
-    rgba = _colormap(np.where(nan_mask, 0.0, norm), scale, invert, opacity)
+    rgba = _colormap(np.where(nan_mask, 0.0, norm), scale, invert)
     rgba[nan_mask, 3] = 0   # transparent outside hull
 
     img = Image.fromarray(rgba, "RGBA")
@@ -364,18 +361,16 @@ async def tile_metadata():
 @app.get("/tiles/{z}/{x}/{y}.png")
 async def get_tile(
     z: int, x: int, y: int,
-    colorscale: str   = Query(DEFAULT_SCALE,   alias="colorscale"),
-    invert:     int   = Query(0,               alias="invert"),
-    opacity:    float = Query(DEFAULT_OPACITY, alias="opacity"),
+    colorscale: str = Query(DEFAULT_SCALE, alias="colorscale"),
+    invert:     int = Query(0,             alias="invert"),
 ):
     if not (0 <= z <= 18):
         raise HTTPException(400, "zoom out of range")
 
     colorscale = colorscale if colorscale in COLOR_SCALES else DEFAULT_SCALE
-    opacity    = float(np.clip(opacity, 0.0, 1.0))
     inv_bool   = bool(invert)
 
-    cache_key = (z, x, y, colorscale, inv_bool, round(opacity, 2))
+    cache_key = (z, x, y, colorscale, inv_bool)
 
     with _tile_lock:
         cached = _tile_cache.get(cache_key)
@@ -384,7 +379,7 @@ async def get_tile(
                         headers={"Cache-Control": "public, max-age=300"})
 
     dc  = await _get_cache()
-    png = _render(z, x, y, dc, colorscale, inv_bool, opacity) \
+    png = _render(z, x, y, dc, colorscale, inv_bool) \
           if dc else _empty_png()
 
     _evict()

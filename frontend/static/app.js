@@ -135,7 +135,6 @@ function _tileUrl() {
   const p = new URLSearchParams({
     colorscale: activeScale,
     invert:     invertColors ? 1 : 0,
-    opacity:    state.opacity.toFixed(2),
     t:          _tileTs,
   });
   return `${window.HEATMAP_URL}/tiles/{z}/{x}/{y}.png?${p}`;
@@ -144,7 +143,7 @@ function _tileUrl() {
 let _tileTs = Date.now();
 
 const snrTileLayer = L.tileLayer(_tileUrl(), {
-  opacity:       1,            // opacity baked into PNG alpha by server
+  opacity:       state.opacity,
   maxNativeZoom: 18,
   maxZoom:       19,
   tms:           false,
@@ -497,8 +496,7 @@ document.getElementById('opacity').addEventListener('input', function () {
   state.opacity = parseFloat(this.value);
   document.getElementById('opacity-val').textContent = parseFloat(this.value).toFixed(2);
   _savePrefs({ opacity: state.opacity });
-  // Opacity is baked into tiles by server; update URL params
-  _applyTileUrl();
+  snrTileLayer.setOpacity(state.opacity);
   _updateExportBox();
 });
 
@@ -537,6 +535,40 @@ document.getElementById('csv-input').addEventListener('change', function () {
 });
 document.getElementById('clear-btn').addEventListener('click', clearData);
 
+
+// ── Drag-and-drop CSV import ──────────────────────────────────────────────────
+// Capture phase so these fire before Leaflet consumes map drag events.
+const _dropOverlay = document.getElementById('drop-overlay');
+
+function _isFileDrag(e) {
+  try { return Array.from(e.dataTransfer.types).some(t => t.toLowerCase() === 'files'); }
+  catch (_) { return false; }
+}
+
+document.addEventListener('dragenter', (e) => {
+  if (_isFileDrag(e)) { e.preventDefault(); _dropOverlay.classList.remove('hidden'); }
+}, true);
+
+document.addEventListener('dragleave', (e) => {
+  // Hide when cursor leaves the viewport (covers both Escape and dragging back out)
+  if (e.clientX <= 0 || e.clientY <= 0 ||
+      e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
+    _dropOverlay.classList.add('hidden');
+  }
+}, true);
+
+document.addEventListener('dragover', (e) => { e.preventDefault(); }, true);
+
+document.addEventListener('drop', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  _dropOverlay.classList.add('hidden');
+  const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : [];
+  const file = files.find(f => f.name.toLowerCase().endsWith('.csv'));
+  if (file) uploadCSV(file);
+  else if (files.length) setStatus('Drop a .csv file to import', 'error');
+}, true);
+
 map.on('click', clearSelection);
 
 
@@ -548,7 +580,6 @@ function _exportTileUrl() {
   const p = new URLSearchParams({
     colorscale: activeScale,
     invert:     invertColors ? 1 : 0,
-    opacity:    state.opacity.toFixed(2),
   });
   return `${window.HEATMAP_URL}/tiles/{z}/{x}/{y}.png?${p}`;
 }
