@@ -136,17 +136,18 @@ From another device on the same network, use the host machine's LAN IP instead o
 
 All rendering parameters are query strings on the tile URL, so changing appearance requires no server round-trip beyond fetching new tiles.
 
-| Parameter    | Values                                  | Default  | Description                         |
-| ------------ | --------------------------------------- | -------- | ----------------------------------- |
-| `colorscale` | `rdylbu`, `viridis`, `plasma`, `greens` | `rdylbu` | Color scale                         |
-| `invert`     | `0`, `1`                                | `0`      | Invert the color scale              |
-| `opacity`    | `0.0` – `1.0`                           | `0.65`   | Tile opacity (baked into PNG alpha) |
+| Parameter    | Values                                  | Default  | Description            |
+| ------------ | --------------------------------------- | -------- | ---------------------- |
+| `colorscale` | `rdylbu`, `viridis`, `plasma`, `greens` | `rdylbu` | Color scale            |
+| `invert`     | `0`, `1`                                | `0`      | Invert the color scale |
 
 Example:
 
 ```
-http://192.168.1.10:5002/tiles/12/2197/1425.png?colorscale=viridis&opacity=0.8
+http://192.168.1.10:5002/tiles/12/2197/1425.png?colorscale=viridis
 ```
+
+Opacity is controlled by the frontend map layer, not by the tile service.
 
 ### TileJSON / OsmAnd
 
