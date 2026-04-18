@@ -32,6 +32,19 @@ The browser fetches tiles **directly** from heatmap-service on port 5002 — thi
 
 The heatmap-service itself depends on the data-service for measurement data, so data-service must be available for tile rendering.
 
+## About
+
+This project is a simple visualiser for Meshtastic range-test data. Meshtastic is a radio mesh system that can export CSV logs of received signal strength (SNR), locations, and distances from range tests between nodes.
+
+Use the frontend UI to:
+
+- import a Meshtastic range-test CSV file
+- browse all measurements and hide/unhide points
+- view an SNR-based heatmap overlay on an interactive map
+- export a TileJSON-compatible tile source for apps like OsmAnd
+
+If you do not have your own Meshtastic data yet, import the included example CSV at `example/Meshtastic_rangetest_21c5_20260408_154441.csv` to get started quickly.
+
 ## Quick start
 
 Use the images built by the CI pipeline from GitHub Container Registry.
