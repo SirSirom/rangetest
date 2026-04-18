@@ -16,9 +16,9 @@ Three-service architecture for visualising Meshtastic range-test data as an inte
 │ Flask          │    │ FastAPI                             │
 │ Serves UI,     │    │ XYZ PNG tiles (EPSG:3857)           │
 │ proxies data   │    │ TileJSON metadata                   │
-│ API calls      │    │ Direct browser access — no proxy    │
+│ API calls      │    │ Uses data-service for measurements  │
+│               │    │ Direct browser access — no proxy    │
 └───────┬────────┘    └─────────────────────────────────────┘
-        │
         ▼
 ┌────────────────────┐
 │ data-service :5001 │
@@ -30,14 +30,19 @@ Three-service architecture for visualising Meshtastic range-test data as an inte
 
 The browser fetches tiles **directly** from heatmap-service on port 5002 — this means tile streaming does not pass through the frontend and works correctly from any device on the same network (phone, tablet).
 
+The heatmap-service itself depends on the data-service for measurement data, so data-service must be available for tile rendering.
+
 ## Quick start
+
 Use the images built by the CI pipeline from GitHub Container Registry.
+
 ```bash
 docker compose up -d
 ```
+
 ### Example `docker-compose.yml`
 
-```yml 
+```yml
 services:
   frontend:
     image: ghcr.io/sirsirom/rangetest/frontend:latest
@@ -78,53 +83,54 @@ From another device on the same network, use the host machine's LAN IP instead o
 
 ### Environment variables
 
-| Variable | Service | Default | Description |
-|---|---|---|---|
-| `DB_PATH` | data-service | `/app/data/rangetest.db` | SQLite database path |
-| `DATA_SERVICE_URL` | frontend, heatmap-service | `http://localhost:5001` | Internal data-service address |
-| `HEATMAP_SERVICE_URL` | frontend | `http://localhost:5002` | Internal heatmap-service address |
-| `HEATMAP_PUBLIC_URL` | frontend | *(auto)* | Public URL the **browser** uses to reach heatmap-service. Leave empty — JS defaults to `window.location.hostname:5002`. Set explicitly when running behind a reverse proxy. Example: `http://192.168.1.10:5002` |
+| Variable              | Service                   | Default                  | Description                                                                                                                                                                                                     |
+| --------------------- | ------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DB_PATH`             | data-service              | `/app/data/rangetest.db` | SQLite database path                                                                                                                                                                                            |
+| `DATA_SERVICE_URL`    | frontend, heatmap-service | `http://localhost:5001`  | Internal data-service address                                                                                                                                                                                   |
+| `HEATMAP_SERVICE_URL` | frontend                  | `http://localhost:5002`  | Internal heatmap-service address                                                                                                                                                                                |
+| `HEATMAP_PUBLIC_URL`  | frontend                  | _(auto)_                 | Public URL the **browser** uses to reach heatmap-service. Leave empty — JS defaults to `window.location.hostname:5002`. Set explicitly when running behind a reverse proxy. Example: `http://192.168.1.10:5002` |
 
 ## Services
 
-| Service | Port | Responsibility |
-|---|---|---|
-| frontend | 5000 | UI, data-service proxy |
-| data-service | 5001 | SQLite CRUD, CSV import, dedup |
-| heatmap-service | 5002 | XYZ tile rendering, TileJSON |
+| Service         | Port | Responsibility                 |
+| --------------- | ---- | ------------------------------ |
+| frontend        | 5000 | UI, data-service proxy         |
+| data-service    | 5001 | SQLite CRUD, CSV import, dedup |
+| heatmap-service | 5002 | XYZ tile rendering, TileJSON   |
 
 ## Data service API
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/measurements` | List all (supports `?hidden=true/false&sender_id=&limit=&offset=`) |
-| POST | `/measurements/import` | Upload CSV (multipart `file`) |
-| DELETE | `/measurements` | Wipe all |
-| GET | `/measurements/{id}` | Get one |
-| PATCH | `/measurements/{id}` | Toggle `{"hidden": true/false}` |
-| DELETE | `/measurements/{id}` | Hard delete one |
-| GET | `/stats` | Row counts + sender list |
+| Method | Path                   | Description                                                        |
+| ------ | ---------------------- | ------------------------------------------------------------------ |
+| GET    | `/measurements`        | List all (supports `?hidden=true/false&sender_id=&limit=&offset=`) |
+| POST   | `/measurements/import` | Upload CSV (multipart `file`)                                      |
+| DELETE | `/measurements`        | Wipe all                                                           |
+| GET    | `/measurements/{id}`   | Get one                                                            |
+| PATCH  | `/measurements/{id}`   | Toggle `{"hidden": true/false}`                                    |
+| DELETE | `/measurements/{id}`   | Hard delete one                                                    |
+| GET    | `/stats`               | Row counts + sender list                                           |
 
 ## Heatmap service API
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/tiles/{z}/{x}/{y}.png` | XYZ PNG tile (EPSG:3857) |
-| GET | `/tiles/metadata.json` | TileJSON 2.2 descriptor |
-| POST | `/invalidate` | Drop data + tile cache |
-| GET | `/health` | Health check |
+| Method | Path                     | Description              |
+| ------ | ------------------------ | ------------------------ |
+| GET    | `/tiles/{z}/{x}/{y}.png` | XYZ PNG tile (EPSG:3857) |
+| GET    | `/tiles/metadata.json`   | TileJSON 2.2 descriptor  |
+| POST   | `/invalidate`            | Drop data + tile cache   |
+| GET    | `/health`                | Health check             |
 
 ### Tile query parameters
 
 All rendering parameters are query strings on the tile URL, so changing appearance requires no server round-trip beyond fetching new tiles.
 
-| Parameter | Values | Default | Description |
-|---|---|---|---|
-| `colorscale` | `rdylbu`, `viridis`, `plasma`, `greens` | `rdylbu` | Color scale |
-| `invert` | `0`, `1` | `0` | Invert the color scale |
-| `opacity` | `0.0` – `1.0` | `0.65` | Tile opacity (baked into PNG alpha) |
+| Parameter    | Values                                  | Default  | Description                         |
+| ------------ | --------------------------------------- | -------- | ----------------------------------- |
+| `colorscale` | `rdylbu`, `viridis`, `plasma`, `greens` | `rdylbu` | Color scale                         |
+| `invert`     | `0`, `1`                                | `0`      | Invert the color scale              |
+| `opacity`    | `0.0` – `1.0`                           | `0.65`   | Tile opacity (baked into PNG alpha) |
 
 Example:
+
 ```
 http://192.168.1.10:5002/tiles/12/2197/1425.png?colorscale=viridis&opacity=0.8
 ```
@@ -134,7 +140,8 @@ http://192.168.1.10:5002/tiles/12/2197/1425.png?colorscale=viridis&opacity=0.8
 The `/tiles/metadata.json` endpoint returns a [TileJSON 2.2](https://github.com/mapbox/tilejson-spec) descriptor. The tile URL template is also shown in the **Settings → External tile layer** panel in the UI.
 
 To add the heatmap as an overlay in **OsmAnd**:
-1. *Configure map → Overlay map → Add online source*
+
+1. _Configure map → Overlay map → Add online source_
 2. Use the URL from the export panel, replacing `{z}/{x}/{y}` with `{0}/{1}/{2}`
 
 ## CSV format
